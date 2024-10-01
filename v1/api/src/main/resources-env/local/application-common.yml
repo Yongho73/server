@@ -1,0 +1,6 @@
+server:
+  port: 8080
+settings:
+  jwt:
+    secret: smartixAccessCredential0419jH8lURsecX0r7NSePoGxUUBgu10W8v4PL6Lucda1X7M=  
+  allowedOrigins: http://localhost:8080
