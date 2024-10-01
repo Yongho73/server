@@ -1,1 +1,8 @@
 /.metadata/
+/v1/.metadata/
+/v1/.project
+/v1/.classpath
+/v1/.gitignore
+/v1/.settings/
+.project
+.gitignore
