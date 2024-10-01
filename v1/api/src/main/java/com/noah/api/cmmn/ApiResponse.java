@@ -21,8 +21,8 @@ public class ApiResponse {
         body.put("code", "200");
         body.put("message", "");
         body.put("body", content);
-        response.put("body", body);
-        response.put("contentType", "Result");
+        response.put("cont", body);
+        response.put("contType", "result");
         
         return response;
     }
@@ -38,8 +38,8 @@ public class ApiResponse {
         Map<String, Object> body = new HashMap<>();
         body.put("code", code);
         body.put("message", message);
-        errorResponse.put("body", body);
-        errorResponse.put("contentType", "ErrorResult");
+        errorResponse.put("cont", body);
+        errorResponse.put("contType", "error");
 
         // 응답 전송
         try {
