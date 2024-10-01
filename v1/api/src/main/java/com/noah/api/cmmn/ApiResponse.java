@@ -20,7 +20,7 @@ public class ApiResponse {
         Map<String, Object> body = new HashMap<>();
         body.put("code", "200");
         body.put("message", "");
-        body.put("content", content);
+        body.put("body", content);
         response.put("body", body);
         response.put("contentType", "Result");
         

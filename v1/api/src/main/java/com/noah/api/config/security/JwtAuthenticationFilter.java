@@ -39,11 +39,11 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 	        String check = jwtTokenProvider.validateToken(token);
 
 	        if("invalid".equals(check)) {	        	
-	        	apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401002", "JWT 토큰이 잘못되었습니다.");				
+	        	apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401002", "토큰이 잘못되었습니다.");				
 	        } else if ("expired".equals(check)) {           	        	
-	        	apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401003", "만료된 JWT 토큰입니다.");
+	        	apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401003", "만료된 토큰입니다.");
 	        } else if ("unsuported".equals(check)) {	        
-	        	apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401004", "지원되지 않는 JWT 토큰입니다.");
+	        	apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401004", "지원되지 않는 토큰입니다.");
 	        } else {        	
 	        	Claims claims = jwtTokenProvider.getClaimsFromToken(token);
 	            String username = claims.getSubject();
@@ -56,7 +56,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 	                chain.doFilter(request, response);
 	            } else {
 	            	// 유효하지 않은 토큰인 경우 401 오류 발생 및 JSON 응답 반환
-	            	apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401001", "인증정보가 없습니다.");
+	            	apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401001", "인증 정보가 없습니다.");
 	            }	         
 	        }
 

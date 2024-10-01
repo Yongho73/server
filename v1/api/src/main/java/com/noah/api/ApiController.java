@@ -34,16 +34,16 @@ public class ApiController {
 
 	@GetMapping("/item/{id}")
 	public ResponseEntity<?> getItem(@PathVariable("id") String id) {
-		return ResponseEntity.ok("get..." + id);
+		return ResponseEntity.ok(apiResponse.sendResponse("get..." + id));
 	}
 
 	@PutMapping("/item/{id}")
 	public ResponseEntity<?> modifyItem(@PathVariable("id") String id,  @RequestBody String newItem) {
-		return ResponseEntity.ok("modify..." + id + " with data: " + newItem);
+		return ResponseEntity.ok(apiResponse.sendResponse("modify..." + id + " with data: " + newItem));
 	}
 
 	@DeleteMapping("/item/{id}")
 	public ResponseEntity<?> removeItem(@PathVariable("id") String id) {
-		return ResponseEntity.ok("remove..." + id);
+		return ResponseEntity.ok(apiResponse.sendResponse("remove..." + id));
 	}
 }
