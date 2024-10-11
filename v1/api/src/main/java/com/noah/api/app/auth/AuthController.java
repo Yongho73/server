@@ -1,4 +1,4 @@
-package com.noah.api;
+package com.noah.api.app.auth;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

@@ -1,6 +1,14 @@
+spring:  
+  datasource:    
+    hSql:
+      url: jdbc:hsqldb:mem:testdb # D:\programming\hsqldb-2.7.3\hsqldb\lib>java -cp hsqldb.jar org.hsqldb.util.DatabaseManagerSwing --url jdbc:hsqldb:mem:testdb --user sa --password "1234"
+      username: sa
+      password: 1234
+
 server:
   port: 8080
+  
 settings:
   jwt:
-    secret: smartixAccessCredential0419jH8lURsecX0r7NSePoGxUUBgu10W8v4PL6Lucda1X7M=  
+    secret: smartixAccessCredential0419jH8lURsecX0r7NSePoGxUUBgu10W8v4PL6Lucda1X7M=
   allowedOrigins: http://localhost:8080
