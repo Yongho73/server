@@ -1,4 +1,4 @@
-package com.noah.api;
+package com.noah.api.app.person.controller;
 
 import java.io.File;
 import java.io.IOException;
