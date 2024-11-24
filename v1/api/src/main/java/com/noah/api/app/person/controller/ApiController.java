@@ -1,5 +1,6 @@
 package com.noah.api.app.person.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,18 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.noah.api.app.person.entity.Person;
-import com.noah.api.app.person.service.PersonService;
 import com.noah.api.cmmn.ApiResponse;
 import com.noah.api.cmmn.MessageService;
 
 import io.micrometer.common.util.StringUtils;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
-@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api")
 public class ApiController {
