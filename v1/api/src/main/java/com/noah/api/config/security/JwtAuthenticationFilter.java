@@ -62,7 +62,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
 	     } catch (Exception e) {
 	    	 // 유효하지 않은 토큰인 경우 401 오류 발생 및 JSON 응답 반환
-	    	 apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401005", "유효하지 않은 토큰입니다.");
+	    	 apiResponse.sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "401005", e.getMessage());
 	     }
     }
 }
