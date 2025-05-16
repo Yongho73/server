@@ -13,7 +13,7 @@ public class JmsConfig {
     public JmsTemplate jmsTemplate() {
         // ActiveMQConnectionFactory를 사용하여 연결 팩토리 설정
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory();
-        connectionFactory.setBrokerURL("tcp://192.168.51.10:61616");  // ActiveMQ 브로커 URL 설정
+        connectionFactory.setBrokerURL("tcp://192.168.21.10:61616");  // ActiveMQ 브로커 URL 설정
 
         // ConnectionFactory를 감싸는 CachingConnectionFactory로 성능 최적화
         CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(connectionFactory);

@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 public class PersonService {
 		
-    private PersonMapper mapper;
+    private final PersonMapper mapper;
     
     public List<Person> getPersonList(Person person) {
         return mapper.selectPerson(person);

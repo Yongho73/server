@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration
-@MapperScan(value = "com.noah.api.app.person.service.mapper.PersonMapper", sqlSessionFactoryRef = "hSqlSessionFactory")
+@MapperScan(value = "com.noah.api.app.person.service.mapper", sqlSessionFactoryRef = "hSqlSessionFactory")
 public class MyBatisHsqlConfiguration {
 
     @Primary

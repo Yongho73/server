@@ -13,11 +13,19 @@ spring:
     port: 5672
     username: admin
     password: smartix0419
-  activemq:
-    broker-url: tcp://192.168.51.10:61616
+  artemis:
+    broker-url: tcp://192.168.21.10:61616
     user: admin  # ActiveMQ 사용자명
-    password: admin  # ActiveMQ 비밀번호
-    in-memory: false  # 인메모리 모드 비활성화
-    pool:
-      enabled: true  # 커넥션 풀 활성화
-      max-connections: 10  # 최대 연결 수
+    password: "smartix!0419"  # ActiveMQ 비밀번호
+  jms:
+    pub-sub-domain: true
+
+logging:
+  level:
+    jdbc:
+      sqlonly: DEBUG
+      sqltiming: INFO
+      resultsettable: INFO
+      audit: OFF
+      resultset: OFF
+      connection: OFF		

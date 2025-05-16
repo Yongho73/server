@@ -30,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 @EnableJpaRepositories(entityManagerFactoryRef = "hSqlEntityManagerFactory", transactionManagerRef = "hSqlTransactionManager")
 public class HSqlConfig {
 
+	@Value("${spring.datasource.hSql.driver-class-name}")
+	private String dbClassName;
 	@Value("${spring.datasource.hSql.url}")
 	private String dbUrl;
 	@Value("${spring.datasource.hSql.username}")
@@ -41,6 +43,7 @@ public class HSqlConfig {
 	@Bean(name = "hSqlDataSource")
 	public DataSource dataSource() throws SQLException {
 		DataSource dataSource = DataSourceBuilder.create()
+				.driverClassName(dbClassName)
                 .url(dbUrl)
                 .username(dbUser)
                 .password(dbPassword)

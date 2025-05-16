@@ -14,37 +14,38 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.noah.api.app.person.entity.Person;
+import com.noah.api.app.person.service.PersonService;
 import com.noah.api.cmmn.ApiResponse;
 import com.noah.api.cmmn.MessageService;
 
 import io.micrometer.common.util.StringUtils;
+import lombok.RequiredArgsConstructor;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api")
 public class ApiController {
-		
-	private ApiResponse apiResponse = new ApiResponse();	
-	
+
+	private ApiResponse apiResponse = new ApiResponse();
+	private final PersonService personSerevice;
+
 	@Autowired
-    private MessageService activemq;
-	
-	public ApiController() {		
-		//
-	}
+	private MessageService activemq;
 
 	@GetMapping("/items")
-	public ResponseEntity<?> getItems(@RequestParam(value = "msg") String msg) {		
+	public ResponseEntity<?> getItems(@RequestParam(value = "msg") String msg) {
 		List<String> result = new ArrayList<String>();
-		
+
 		String message = StringUtils.isBlank(msg) ? "no message" : msg;
-		
-		 // 메시지를 전송
-        activemq.sendMessage(message);		
-		
+
+		// 메시지를 전송
+		activemq.sendMessage(message);
+
 		result.add("item one");
 		result.add("item two");
 		result.add(message);
-		 
+
 		return ResponseEntity.ok(apiResponse.sendResponse(result));
 	}
 
@@ -54,7 +55,7 @@ public class ApiController {
 	}
 
 	@PutMapping("/item/{id}")
-	public ResponseEntity<?> modifyItem(@PathVariable("id") String id,  @RequestBody String newItem) {
+	public ResponseEntity<?> modifyItem(@PathVariable("id") String id, @RequestBody String newItem) {
 		return ResponseEntity.ok(apiResponse.sendResponse("modify..." + id + " with data: " + newItem));
 	}
 
@@ -62,4 +63,10 @@ public class ApiController {
 	public ResponseEntity<?> removeItem(@PathVariable("id") String id) {
 		return ResponseEntity.ok(apiResponse.sendResponse("remove..." + id));
 	}
+
+	@GetMapping("/persons")
+	public ResponseEntity<?> persons() {
+		Person person = new Person();
+		return ResponseEntity.ok(apiResponse.sendResponse(personSerevice.getPersonList(person)));
+	}	 
 }
