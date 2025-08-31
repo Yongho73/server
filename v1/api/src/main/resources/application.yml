@@ -19,13 +19,3 @@ spring:
     password: "smartix!0419"  # ActiveMQ 비밀번호
   jms:
     pub-sub-domain: true
-
-logging:
-  level:
-    jdbc:
-      sqlonly: DEBUG
-      sqltiming: INFO
-      resultsettable: INFO
-      audit: OFF
-      resultset: OFF
-      connection: OFF		

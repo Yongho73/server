@@ -24,7 +24,7 @@ public class SecurityConfig {
     	.authorizeHttpRequests(
     			
     			authz -> authz
-    			.requestMatchers("/auth/token").permitAll() // 토큰 발급 API는 인증 없이 접근 허용
+    			.requestMatchers("/auth/token", "/api/queue/**").permitAll() // 토큰 발급 API는 인증 없이 접근 허용
     			.anyRequest().authenticated() // 그 외의 요청은 인증 필요
     			
          )
