@@ -4,5 +4,6 @@
 /v1/.classpath
 /v1/.gitignore
 /v1/.settings/
+/v1/api/logs/
 .project
 .gitignore
