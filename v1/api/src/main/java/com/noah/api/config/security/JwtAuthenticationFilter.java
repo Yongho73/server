@@ -5,7 +5,7 @@ import java.util.Collections;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.noah.api.cmmn.ApiResponse;
 
@@ -14,13 +14,12 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
 	private final JwtTokenProvider jwtTokenProvider;
 	private final ApiResponse apiResponse;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
-        super(authenticationManager -> null);
+    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {        
         this.jwtTokenProvider = jwtTokenProvider;
         this.apiResponse = new ApiResponse();
     }
