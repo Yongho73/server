@@ -54,6 +54,8 @@ public class QueueWebSocketHandler extends TextWebSocketHandler {
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
         JsonNode json = new ObjectMapper().readTree(payload);
+        
+        log.info("♻️ handleTextMessage: {}", json.toString());
 
         if ("REJOIN".equals(json.get("type").asText())) {
             String eventId = json.get("eventId").asText();
