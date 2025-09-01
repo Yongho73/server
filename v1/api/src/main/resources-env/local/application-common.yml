@@ -4,12 +4,20 @@ server:
 settings:
   jwt:
     secret: smartixAccessCredential0419jH8lURsecX0r7NSePoGxUUBgu10W8v4PL6Lucda1X7M=
-  allowedOrigins: http://localhost:8080,http://localhost:5173,http://localhost:3000
+  allowedOrigins:
+    - http://localhost:8080
+    - http://localhost:5173
+    - http://localhost:3000
   
 spring:  
   datasource:    
     hSql:
-      driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
-      url: jdbc:log4jdbc:hsqldb:mem:testdb # D:\programming\hsqldb-2.7.3\hsqldb\lib>java -cp hsqldb.jar org.hsqldb.util.DatabaseManagerSwing --url jdbc:hsqldb:mem:testdb --user sa --password "1234"
+      driver-class-name: org.hsqldb.jdbc.JDBCDriver
+      url: jdbc:hsqldb:mem:testdb # D:\programming\hsqldb-2.7.3\hsqldb\lib>java -cp hsqldb.jar org.hsqldb.util.DatabaseManagerSwing --url jdbc:hsqldb:mem:testdb --user sa --password "1234"
       username: sa
+      password: 1234
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6300
       password: 1234

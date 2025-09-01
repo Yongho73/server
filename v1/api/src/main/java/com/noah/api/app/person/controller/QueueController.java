@@ -29,9 +29,14 @@ public class QueueController {
 
     @GetMapping("/status/{eventId}/{queueId}")
     public QueueStatusResponse status(
-    		@PathVariable("eventId") String eventId, 
-    		@PathVariable("queueId") String queueId
+    	@PathVariable("eventId") String eventId, 
+    	@PathVariable("queueId") String queueId   	
     ) {
         return queueService.checkStatus(eventId, queueId);
+    }
+
+    @PostMapping("/allow/{eventId}")
+    public String allow(@PathVariable("eventId") String eventId) {
+        return queueService.allowNext(eventId); // 관리자/스케줄러가 호출해서 맨앞 사람 입장 처리
     }
 }

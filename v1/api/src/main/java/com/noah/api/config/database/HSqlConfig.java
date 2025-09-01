@@ -23,6 +23,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import jakarta.persistence.EntityManagerFactory;
 import lombok.extern.slf4j.Slf4j;
+import net.ttddyy.dsproxy.support.ProxyDataSourceBuilder;
 
 @Slf4j
 @Configuration
@@ -41,17 +42,27 @@ public class HSqlConfig {
 
 	@Primary
 	@Bean(name = "hSqlDataSource")
-	public DataSource dataSource() throws SQLException {
-		DataSource dataSource = DataSourceBuilder.create()
-				.driverClassName(dbClassName)
-                .url(dbUrl)
-                .username(dbUser)
-                .password(dbPassword)
-                .build();
-        log.info("hSqlDataSource...called");
-		// schema.sql 파일을 실행하여 테이블 생성
-        runSchemaSql(dataSource);
-        return dataSource;
+	public DataSource dataSource() throws SQLException {		
+		DataSource realDataSource = DataSourceBuilder.create()
+	            .driverClassName(dbClassName)
+	            .url(dbUrl)
+	            .username(dbUser)
+	            .password(dbPassword)
+	            .build();
+
+	    log.info("hSqlDataSource...called");
+
+	    // ProxyDataSource로 감싸기
+	    DataSource dataSource = ProxyDataSourceBuilder
+	            .create(realDataSource)
+	            .name("HSQL-DS")
+	            .listener(new SimpleQueryLoggingListener())  // 👈 커스텀 리스너 적용
+	            .build();
+
+	    // schema.sql 실행
+	    runSchemaSql(realDataSource); // 주의: 여기서는 실제 datasource 사용해야 함
+
+	    return dataSource;
 	}
 
 	@Primary
