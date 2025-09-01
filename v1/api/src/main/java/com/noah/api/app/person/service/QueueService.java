@@ -72,6 +72,8 @@ public class QueueService {
 
         if (queueId != null) {
             redisTemplate.opsForValue().set("allowed:" + queueId, "true", Duration.ofMinutes(5));
+            // Redis Pub/Sub 발행
+            redisTemplate.convertAndSend("queue:allowed", queueId);
         }
         return queueId;
     }
