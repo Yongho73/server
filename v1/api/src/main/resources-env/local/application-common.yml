@@ -1,5 +1,10 @@
 server:
   port: 8080
+  tomcat:
+    threads:
+      max: 500 # 상태 API QPS 대응
+    accept-count: 2000
+    max-connections: 10000
   
 settings:
   jwt:
@@ -21,3 +26,10 @@ spring:
       host: 127.0.0.1
       port: 6300
       password: 1234
+      timeout: 200ms # 소켓 타임아웃
+      lettuce:
+        pool:
+          max-active: 2000
+          max-idle: 200
+          min-idle: 50
+          time-between-eviction-runs: 2s

@@ -1,5 +1,7 @@
 package com.noah.api.app.person.controller;
 
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,5 +40,10 @@ public class QueueController {
     @PostMapping("/allow/{eventId}")
     public String allow(@PathVariable("eventId") String eventId) {
         return queueService.allowNext(eventId); // 관리자/스케줄러가 호출해서 맨앞 사람 입장 처리
+    }
+    
+    @PostMapping("/heartbeat/{queueId}")
+    public Map<String, Object> heartbeat(@PathVariable("queueId") String queueId) {
+    	return Map.of("ok", queueService.heartbeat(queueId));
     }
 }
