@@ -1,6 +1,5 @@
 package com.noah.api.app.person.service;
 
-import java.nio.channels.IllegalChannelGroupException;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -73,12 +72,8 @@ public class QueueService {
 
         if (queueId != null) {
             redisTemplate.opsForValue().set("allowed:" + queueId, "true", Duration.ofMinutes(5));
-            
-            // Redis Pub/Sub 발행
-            log.info("allowNext = {}", queueId);
-            
-            redisTemplate.convertAndSend("queue:allowed", queueId);
         }
+
         return queueId;
     }
 }
