@@ -2,6 +2,7 @@ package com.noah.api.app.person.controller;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.noah.api.app.person.component.QueueSystemFlag;
 import com.noah.api.app.person.entity.queue.BulkJoinRequest;
 import com.noah.api.app.person.entity.queue.QueueJoinRequest;
 import com.noah.api.app.person.entity.queue.QueueJoinResponse;
@@ -18,6 +20,9 @@ import com.noah.api.app.person.service.QueueService;
 @RestController
 @RequestMapping("/api/queue")
 public class QueueController {
+	
+	@Autowired
+    private QueueSystemFlag flag;
 	
 	private final QueueService queueService;
 
@@ -51,5 +56,17 @@ public class QueueController {
     @PostMapping("/bulkJoin")
     public Map<String, Object> bulkJoin(@RequestBody BulkJoinRequest req) {
     	return Map.of("ok", queueService.bulkJoinWithPipeline(req));
+    }
+    
+    @PostMapping("/on")
+    public String on() {
+        flag.setEnabled(true);
+        return "Waiting System ON";
+    }
+
+    @PostMapping("/off")
+    public String off() {
+        flag.setEnabled(false);
+        return "Waiting System OFF";
     }
 }

@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
@@ -11,6 +12,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
+import com.noah.api.app.person.component.QueueSystemFlag;
 import com.noah.api.app.person.entity.queue.BulkJoinRequest;
 import com.noah.api.app.person.entity.queue.QueueJoinResponse;
 import com.noah.api.app.person.entity.queue.QueueStatusResponse;
@@ -21,7 +23,10 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class QueueService {
 
-    private final StringRedisTemplate redis;
+	@Autowired
+    private QueueSystemFlag queueSystemFlag;
+	
+	private final StringRedisTemplate redis;
 
     public QueueService(StringRedisTemplate redisTemplate) {
         this.redis = redisTemplate;
@@ -55,7 +60,12 @@ public class QueueService {
 
     /* ---------- STATUS: ZRANK(O(logN)) + 동적 ETA + 청소 ---------- */
     public QueueStatusResponse checkStatus(String eventId, String queueId) {
-        String zKey = zsetKey(eventId);
+    	if (!queueSystemFlag.isEnabled()) {
+            // 대기열 꺼진 상태 → 모두 입장
+            return new QueueStatusResponse(0, 0, true);
+        }
+    	
+    	String zKey = zsetKey(eventId);
 
         // 우선 rank 조회
         Long rank = redis.opsForZSet().rank(zKey, queueId);
