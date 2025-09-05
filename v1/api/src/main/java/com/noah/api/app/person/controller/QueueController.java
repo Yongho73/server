@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.noah.api.app.person.entity.queue.BulkJoinRequest;
 import com.noah.api.app.person.entity.queue.QueueJoinRequest;
 import com.noah.api.app.person.entity.queue.QueueJoinResponse;
 import com.noah.api.app.person.entity.queue.QueueStatusResponse;
@@ -45,5 +46,10 @@ public class QueueController {
     @PostMapping("/heartbeat/{queueId}")
     public Map<String, Object> heartbeat(@PathVariable("queueId") String queueId) {
     	return Map.of("ok", queueService.heartbeat(queueId));
+    }
+    
+    @PostMapping("/bulkJoin")
+    public Map<String, Object> bulkJoin(@RequestBody BulkJoinRequest req) {
+    	return Map.of("ok", queueService.bulkJoinWithPipeline(req));
     }
 }

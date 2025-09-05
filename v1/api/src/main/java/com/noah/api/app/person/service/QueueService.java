@@ -2,12 +2,16 @@ package com.noah.api.app.person.service;
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
+import com.noah.api.app.person.entity.queue.BulkJoinRequest;
 import com.noah.api.app.person.entity.queue.QueueJoinResponse;
 import com.noah.api.app.person.entity.queue.QueueStatusResponse;
 
@@ -42,9 +46,11 @@ public class QueueService {
 
         Long rank = redis.opsForZSet().rank(zsetKey(eventId), qid);
         int position = rank == null ? -1 : rank.intValue() + 1;
-        int eta = position * 1; // 기본치(1분/명). 아래 동적 ETA 로 대체 가능
+        
+        // int eta = position * 1; // 기본치(1분/명). 아래 동적 ETA 로 대체 가능
+        // 최초 등롟히 예상 시간을 따로 넣지 않고, checkStatus 에서 예상 시간을 따로 구해 최초는 -1 로 등록함
 
-        return new QueueJoinResponse(qid, position, eta);
+        return new QueueJoinResponse(qid, position, -1);
     }
 
     /* ---------- STATUS: ZRANK(O(logN)) + 동적 ETA + 청소 ---------- */
@@ -131,4 +137,43 @@ public class QueueService {
         }
         return false;
     }
+    
+    /* ---------- 샘플데이터 입력 ---------- */
+    public String bulkJoinWithPipeline(BulkJoinRequest req) {
+        long startJoin = System.currentTimeMillis();
+        String eventId = req.getEventId();
+        int count = req.getCount();
+        
+        log.info("eventId=[{}]", eventId);
+        log.info("count=[{}]", count);
+        
+        
+        int batchSize = 1000;
+        for (int start = 0; start < count; start += batchSize) {
+            int end = Math.min(start + batchSize, count);
+            int finalStart = start;
+
+            redis.executePipelined(new SessionCallback<Object>() {
+                @Override
+                public Object execute(RedisOperations operations) throws DataAccessException {
+                    for (int i = finalStart; i < end; i++) {
+                        String qid = UUID.randomUUID().toString();
+
+                        // increment 결과는 무시 (파이프라인에서는 즉시 값 안 나올 수 있음)
+                        operations.opsForValue().increment("queue:seq:" + eventId);
+
+                        // score는 그냥 i+1 로 넣어도 무방
+                        operations.opsForZSet().add("queue:z:" + eventId, qid, i + 1);
+
+                        // Duration 대신 TimeUnit 사용
+                        operations.opsForValue().set("session:" + qid, "waiting", 60, TimeUnit.MINUTES);
+                    }
+                    return null;
+                }
+            });
+        }
+
+        long endJoin = System.currentTimeMillis();
+        return count + "건 등록 완료. 소요 시간: " + (endJoin - startJoin) + " ms";
+    }     
 }
