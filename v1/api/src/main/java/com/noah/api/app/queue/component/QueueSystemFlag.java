@@ -1,4 +1,4 @@
-package com.noah.api.app.person.component;
+package com.noah.api.app.queue.component;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

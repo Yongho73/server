@@ -1,4 +1,4 @@
-package com.noah.api.app.person.entity.queue;
+package com.noah.api.app.queue.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

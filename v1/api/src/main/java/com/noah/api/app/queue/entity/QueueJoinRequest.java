@@ -1,4 +1,4 @@
-package com.noah.api.app.person.entity.queue;
+package com.noah.api.app.queue.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class BulkJoinRequest {
+public class QueueJoinRequest {
 	private String eventId;
-	private int count;
 }

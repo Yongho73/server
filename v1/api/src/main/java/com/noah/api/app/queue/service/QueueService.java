@@ -1,4 +1,4 @@
-package com.noah.api.app.person.service;
+package com.noah.api.app.queue.service;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -12,10 +12,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
-import com.noah.api.app.person.component.QueueSystemFlag;
-import com.noah.api.app.person.entity.queue.BulkJoinRequest;
-import com.noah.api.app.person.entity.queue.QueueJoinResponse;
-import com.noah.api.app.person.entity.queue.QueueStatusResponse;
+import com.noah.api.app.queue.component.QueueSystemFlag;
+import com.noah.api.app.queue.entity.BulkJoinRequest;
+import com.noah.api.app.queue.entity.QueueJoinResponse;
+import com.noah.api.app.queue.entity.QueueStatusResponse;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class QueueService {
 
 	@Autowired
-    private QueueSystemFlag queueSystemFlag;
+    private QueueServiceFlagRedis queueServiceFlagRedis;
 	
 	private final StringRedisTemplate redis;
 
@@ -41,6 +41,12 @@ public class QueueService {
 
     /* ---------- JOIN: ZADD(O(logN)) ---------- */
     public QueueJoinResponse joinQueue(String eventId) {
+    	
+    	if (!queueServiceFlagRedis.isEnabled(eventId)) {
+            // 큐 등록하지 않고 즉시 입장 처리
+            return new QueueJoinResponse(UUID.randomUUID().toString(), 0, 0);
+        }
+    	
         String qid = UUID.randomUUID().toString();
 
         Long seq = redis.opsForValue().increment(seqKey(eventId)); // score로 사용
@@ -60,7 +66,8 @@ public class QueueService {
 
     /* ---------- STATUS: ZRANK(O(logN)) + 동적 ETA + 청소 ---------- */
     public QueueStatusResponse checkStatus(String eventId, String queueId) {
-    	if (!queueSystemFlag.isEnabled()) {
+    	
+    	if (!queueServiceFlagRedis.isEnabled(eventId)) {
             // 대기열 꺼진 상태 → 모두 입장
             return new QueueStatusResponse(0, 0, true);
         }
@@ -127,8 +134,14 @@ public class QueueService {
     private final RedisScript<String> ALLOW_NEXT_SCRIPT = RedisScript.of(ALLOW_NEXT_LUA, String.class);
 
     public String allowNext(String eventId) {
-        String zKey = zsetKey(eventId);
+        
+    	if (!queueServiceFlagRedis.isEnabled(eventId)) {
+            return null; // 대기열 꺼진 상태에서는 강제 허용 불필요
+        }
+    	
+    	String zKey = zsetKey(eventId);
         String rKey = rateKey(eventId, System.currentTimeMillis() / 60000L); // 분 단위 처리량 키
+        
         try {
             // allowed TTL=300s, rateKey TTL=7200s(2시간)
             return redis.execute(ALLOW_NEXT_SCRIPT, java.util.Arrays.asList(zKey, rKey), "300", "7200");
