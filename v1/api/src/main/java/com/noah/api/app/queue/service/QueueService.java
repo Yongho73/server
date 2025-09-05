@@ -12,7 +12,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
-import com.noah.api.app.queue.component.QueueSystemFlag;
 import com.noah.api.app.queue.entity.BulkJoinRequest;
 import com.noah.api.app.queue.entity.QueueJoinResponse;
 import com.noah.api.app.queue.entity.QueueStatusResponse;
@@ -181,13 +180,10 @@ public class QueueService {
                 public Object execute(RedisOperations operations) throws DataAccessException {
                     for (int i = finalStart; i < end; i++) {
                         String qid = UUID.randomUUID().toString();
-
                         // increment 결과는 무시 (파이프라인에서는 즉시 값 안 나올 수 있음)
                         operations.opsForValue().increment("queue:seq:" + eventId);
-
                         // score는 그냥 i+1 로 넣어도 무방
                         operations.opsForZSet().add("queue:z:" + eventId, qid, i + 1);
-
                         // Duration 대신 TimeUnit 사용
                         operations.opsForValue().set("session:" + qid, "waiting", 60, TimeUnit.MINUTES);
                     }

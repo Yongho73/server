@@ -60,4 +60,16 @@ public class QueueFlagController {
         flag.setEnabled(eventId, next);
         return Map.of("eventId", eventId, "enabled", next);
     }
+    
+    @PostMapping("/refreshMaster")
+    public String refreshMaster() {
+    	flag.evictMaster();
+        return "refreshMaster completed";
+    }
+
+    @PostMapping("/refreshEvent/{eventId}")
+    public String refreshEvent(@PathVariable("eventId") String eventId) {
+    	flag.evictEvent(eventId);
+        return "refreshEvent completed: " + eventId;
+    }
 }
