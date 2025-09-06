@@ -21,15 +21,3 @@ spring:
       url: jdbc:hsqldb:mem:testdb # D:\programming\hsqldb-2.7.3\hsqldb\lib>java -cp hsqldb.jar org.hsqldb.util.DatabaseManagerSwing --url jdbc:hsqldb:mem:testdb --user sa --password "1234"
       username: sa
       password: 1234
-  data:
-    redis:
-      host: 127.0.0.1
-      port: 6300
-      password: 1234
-      timeout: 200ms # 소켓 타임아웃
-      lettuce:
-        pool:
-          max-active: 2000
-          max-idle: 200
-          min-idle: 50
-          time-between-eviction-runs: 2s
