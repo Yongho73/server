@@ -43,9 +43,12 @@ public class QueueController {
         return queueService.allowNext(eventId); // 관리자/스케줄러가 호출해서 맨앞 사람 입장 처리
     }
     
-    @PostMapping("/heartbeat/{queueId}")
-    public Map<String, Object> heartbeat(@PathVariable("queueId") String queueId) {
-    	return Map.of("ok", queueService.heartbeat(queueId));
+    @PostMapping("/heartbeat/{eventId}/{queueId}")
+    public Map<String, Object> heartbeat(
+    	@PathVariable("eventId") String eventId,
+    	@PathVariable("queueId") String queueId
+    ) {
+    	return Map.of("ok", queueService.heartbeat(eventId, queueId));
     }
     
     @PostMapping("/bulkJoin")

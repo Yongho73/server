@@ -208,7 +208,7 @@ docker compose down
 # 다시 올리기
 docker compose up -d      
 
-# 클러스터 묶기(한 번만)
+# 도커 컴포즈 실행 후 클러스터 묶기(한 번만)
 
 Git Bash에서는 줄바꿈에 \ 사용하세요:
 
