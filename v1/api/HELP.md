@@ -63,7 +63,7 @@ services:
       - --cluster-enabled
       - "yes"
       - --cluster-config-file
-      - nodes.conf
+      - /data/nodes.conf
       - --cluster-node-timeout
       - "5000"
       - --appendonly
@@ -91,7 +91,7 @@ services:
       - --cluster-enabled
       - "yes"
       - --cluster-config-file
-      - nodes.conf
+      - /data/nodes.conf
       - --cluster-node-timeout
       - "5000"
       - --appendonly
@@ -115,7 +115,7 @@ services:
       - --cluster-enabled
       - "yes"
       - --cluster-config-file
-      - nodes.conf
+      - /data/nodes.conf
       - --cluster-node-timeout
       - "5000"
       - --appendonly
@@ -139,7 +139,7 @@ services:
       - --cluster-enabled
       - "yes"
       - --cluster-config-file
-      - nodes.conf
+      - /data/nodes.conf
       - --cluster-node-timeout
       - "5000"
       - --appendonly
@@ -163,7 +163,7 @@ services:
       - --cluster-enabled
       - "yes"
       - --cluster-config-file
-      - nodes.conf
+      - /data/nodes.conf
       - --cluster-node-timeout
       - "5000"
       - --appendonly
@@ -187,7 +187,7 @@ services:
       - --cluster-enabled
       - "yes"
       - --cluster-config-file
-      - nodes.conf
+      - /data/nodes.conf
       - --cluster-node-timeout
       - "5000"
       - --appendonly

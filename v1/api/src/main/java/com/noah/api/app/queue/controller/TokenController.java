@@ -20,6 +20,21 @@ public class TokenController {
         this.tokenService = tokenService;
     }
 	
+	@PostMapping("/token/create/{eventId}/{queueId}")
+	public ResponseEntity<String> createToken(
+		@PathVariable("eventId") String eventId, 
+	    @PathVariable("queueId") String queueId  
+	) {
+
+	    String newToken = tokenService.createToken(eventId, queueId);
+	    
+	    if (newToken == null) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("토큰 생성 실패");
+	    } else {	    
+	    	return ResponseEntity.ok(newToken);
+	    }
+	}
+	
 	@PostMapping("/token/refresh/{eventId}/{queueId}")
 	public ResponseEntity<String> refreshToken(
 		@PathVariable("eventId") String eventId, 

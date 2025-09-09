@@ -21,6 +21,12 @@ public class TokenService {
         this.redis = redisTemplate;
     }
 	
+	public String createToken(String eventId, String queueId) {
+		// ✅ 새 JWT 생성
+	    String newToken = tokenProvider.createToken(eventId, queueId);	    
+	    return newToken;
+	}
+	
 	public String refreshToken(String eventId, String queueId) {
 		
 		String slotTag = "{" + eventId + "}";
