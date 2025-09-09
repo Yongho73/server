@@ -29,6 +29,7 @@ spring:
       use-key-prefix: true
       # key-prefix: ""           # 필요 시 프리픽스 강제 지정
 
+  # Redis 클러스터 설정
   data:
     redis:
       client-type: lettuce
