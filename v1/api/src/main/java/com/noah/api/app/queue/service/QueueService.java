@@ -106,13 +106,7 @@ public class QueueService {
 
         int position = rank.intValue() + 1;
 
-        // 5. 내 순서면 자동 허용 (allowed == false일 때만)
-        if (position == 1 && !allowed) {
-            token = allowNext(eventId); // allowNext 내부에서 토큰 저장
-            return new QueueStatusResponse(0, 0, true, token);
-        }
-
-        // 6. ETA 계산 (최근 3분 평균)
+        // 5. ETA 계산 (최근 3분 평균)
         int ratePerMin = recentThroughputPerMinute(eventId, 3);
         if (ratePerMin <= 0) ratePerMin = 1;
         int eta = (int) Math.ceil((double) position / ratePerMin);

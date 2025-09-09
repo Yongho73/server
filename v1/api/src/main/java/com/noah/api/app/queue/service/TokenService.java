@@ -7,9 +7,6 @@ import org.springframework.stereotype.Service;
 
 import com.noah.api.app.queue.provider.TokenProvider;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 @Service
 public class TokenService {
 	
