@@ -177,6 +177,30 @@ public class QueueService {
         }
         return false;
     }
+    
+    /* 대기열 이탈: 세션 + ZSET + allowedKey 정리 */
+    public boolean leaveQueue(String eventId, String queueId) {
+        if (queueId == null) return false;
+
+        String zKey       = zsetKey(eventId);
+        String sessionKey = sessionKey(eventId, queueId);
+        String allowedKey = allowedKey(eventId, queueId);
+
+        try {
+            // 세션 삭제
+            redis.delete(sessionKey);
+            // ZSET 제거
+            redis.opsForZSet().remove(zKey, queueId);
+            // allowed 토큰 삭제 (이미 입장 허용된 사용자라면 무효화)
+            redis.delete(allowedKey);
+
+            log.info("leaveQueue: eventId={}, queueId={} -> 제거 완료", eventId, queueId);
+            return true;
+        } catch (Exception e) {
+            log.error("leaveQueue 실패: eventId={}, queueId={}", eventId, queueId, e);
+            return false;
+        }
+    }
 
     /* 부하 테스트용 샘플데이터 입력 (bulk insert: score는 i+1) */
     public String bulkJoinWithPipeline(BulkJoinRequest req) {

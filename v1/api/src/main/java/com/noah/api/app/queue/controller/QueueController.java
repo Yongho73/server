@@ -51,6 +51,14 @@ public class QueueController {
     	return Map.of("ok", queueService.heartbeat(eventId, queueId));
     }
     
+    @PostMapping("/leave/{eventId}/{queueId}")
+    public Map<String, Object> leave(
+    	@PathVariable("eventId") String eventId,
+    	@PathVariable("queueId") String queueId
+    ) {
+    	return Map.of("ok", queueService.leaveQueue(eventId, queueId));
+    }
+    
     @PostMapping("/bulkJoin")
     public Map<String, Object> bulkJoin(@RequestBody BulkJoinRequest req) {
     	return Map.of("ok", queueService.bulkJoinWithPipeline(req));
