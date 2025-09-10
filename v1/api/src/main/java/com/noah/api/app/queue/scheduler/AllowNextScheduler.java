@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -30,30 +32,66 @@ public class AllowNextScheduler {
         return "allowed{" + eventId + "}:*";
     }
 
-    @Scheduled(fixedDelay = 3000)
+    /** SCAN 으로 allowed 키 개수 조회 */
+    private int scanAllowedCount(String eventId) {
+        String pattern = allowedKeyPattern(eventId);
+        int count = 0;
+
+        Cursor<byte[]> cursor = null;
+        try {
+            cursor = redis.execute((org.springframework.data.redis.connection.RedisConnection connection) -> 
+                    connection.scan(
+                            ScanOptions.scanOptions()
+                                       .match(pattern)
+                                       .count(1000)
+                                       .build()
+                    )
+            );
+
+            if (cursor != null) {
+                while (cursor.hasNext()) {
+                    cursor.next();
+                    count++;
+                }
+            }
+        } catch (Exception e) {
+            log.error("SCAN error for eventId={}", eventId, e);
+        } finally {
+            if (cursor != null) {
+                try {
+                    cursor.close();
+                } catch (Exception ignore) {}
+            }
+        }
+
+        return count;
+    }
+
+
+    @Scheduled(fixedDelay = 5000)
     public void checkExpiredAndAllowNext() {
         for (String eventId : eventIds) {
-            
-        	// 현재 허용된 키 개수 조회
-            int current = redis.keys(allowedKeyPattern(eventId)).size();
+
+            // 현재 허용된 키 개수 (SCAN 기반)
+            int current = scanAllowedCount(eventId);
 
             // 이전 값
             int prev = prevAllowedCount.computeIfAbsent(eventId, k -> new AtomicInteger(0)).get();
 
             if (current < prev) {
                 int expiredCount = prev - current;
-                System.out.println("[expired] eventId=" + eventId + " -> " + expiredCount + "명 만료됨");
+                log.info("[expired] eventId={} -> {}명 만료됨", eventId, expiredCount);
 
                 // 만료 수만큼 allowNext 실행
                 for (int i = 0; i < expiredCount; i++) {
                     String token = queueService.allowNext(eventId);
-                    System.out.println("[allowNext] eventId=" + eventId + ", token=" + token);
+                    log.info("[allowNext] eventId={}, token={}", eventId, token);
                 }
             }
 
             // 현재값을 저장
-            prevAllowedCount.get(eventId).set(current);           
-            log.info("eventId=["+eventId+"], current=["+current+"], prev=["+prev+"]");
+            prevAllowedCount.get(eventId).set(current);
+            log.info("eventId=[{}], current=[{}], prev=[{}]", eventId, current, prev);
         }
     }
 }
