@@ -23,7 +23,7 @@ public class AllowNextScheduler {
     private final QueueService queueService;
     private final StringRedisTemplate redis;
 
-    private final List<String> eventIds = List.of("EVT123");
+    private final List<String> eventIds = List.of("GD2501794");
 
     // 이벤트별 직전 허용자 수 저장 (현재 남아있는 allowed 키 개수)
     private final ConcurrentHashMap<String, AtomicInteger> prevAllowedCount = new ConcurrentHashMap<>();
@@ -31,7 +31,7 @@ public class AllowNextScheduler {
     // 이벤트별 최초 허용 인원 (이 값은 환경설정/DB로도 뺄 수 있음)
     @SuppressWarnings("serial")
 	private final ConcurrentHashMap<String, Integer> initialAllowLimit = new ConcurrentHashMap<>() {{
-        put("EVT123", 1); // EVT123 은 최초 10명 허용
+        put("GD2501794", 2); // EVT123 은 최초 10명 허용
     }};
 
     private String allowedKeyPattern(String eventId) {
