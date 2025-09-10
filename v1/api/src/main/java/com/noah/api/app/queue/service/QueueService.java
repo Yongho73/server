@@ -108,9 +108,9 @@ public class QueueService {
         if (ratePerMin <= 0) ratePerMin = 1;
 
         // 초 단위 ETA (UX 개선)
-        int etaSeconds = (int) Math.ceil((position * 60.0) / ratePerMin);
+        int etaMinutes = Math.min(((int) Math.ceil((double) position / Math.max(ratePerMin, 1))), 60); // 최대 1시간까지만 노출
 
-        return new QueueStatusResponse(position, etaSeconds, false, null);
+        return new QueueStatusResponse(position, etaMinutes, false, null);
     }
 
     /* 3분 간격 평균 처리 시간 계산 */
