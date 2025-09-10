@@ -26,10 +26,11 @@ public class QueueService {
 
 	@Autowired
     private QueueServiceFlagRedis queueServiceFlagRedis;
-	
 	private final TokenProvider tokenProvider = new TokenProvider();
-	
 	private final StringRedisTemplate redis;
+	
+	// 하트비트 TTL
+	private int heartbeatDurationSecond = 90;
 
     public QueueService(StringRedisTemplate redisTemplate) {
         this.redis = redisTemplate;
@@ -58,7 +59,7 @@ public class QueueService {
         if (seq == null) seq = 1L;
 
         redis.opsForZSet().add(zsetKey(eventId), qid, seq.doubleValue());
-        redis.opsForValue().set(sessionKey(eventId, qid), "waiting", Duration.ofMinutes(60)); // heartbeat로 연장
+        redis.opsForValue().set(sessionKey(eventId, qid), "waiting", Duration.ofMinutes(heartbeatDurationSecond)); // heartbeat로 연장
 
         Long rank = redis.opsForZSet().rank(zsetKey(eventId), qid);
         int position = rank == null ? -1 : rank.intValue() + 1;
@@ -81,39 +82,38 @@ public class QueueService {
         String allowedKey = allowedKey(eventId, queueId);
         String sessionKey = sessionKey(eventId, queueId);
 
-        // 2. allowedKey 먼저 조회 (get이 hasKey보다 안전)
+        // 2. allowedKey 먼저 조회 (허용 토큰 있으면 최우선)
         String token = redis.opsForValue().get(allowedKey);
-        boolean allowed = (token != null);
-
-        // 3. 순번 확인
-        Long rank = redis.opsForZSet().rank(zKey, queueId);
-
-        if (rank == null) {
-            // ZSET에는 없는데 토큰이 있으면 이미 입장 허용된 상태
-            if (allowed) {
-                return new QueueStatusResponse(0, 0, true, token);
-            }
-            return new QueueStatusResponse(-1, -1, false); // 잘못된 queueId or 세션 만료
+        if (token != null) {
+            return new QueueStatusResponse(0, 0, true, token);
         }
 
-        // 4. 세션 없는 유저 정리 (optional)
+        // 3. 세션이 없다면 → 유령 queueId 처리
         if (!redis.hasKey(sessionKey)) {
-            if (!allowed) {
-                redis.opsForZSet().remove(zKey, queueId); // 안전한 청소
-                return new QueueStatusResponse(-1, -1, false);
-            }
+            // 안전하게 ZSET에서도 제거
+            redis.opsForZSet().remove(zKey, queueId);
+            return new QueueStatusResponse(-1, -1, false);
+        }
+
+        // 4. 순번 확인
+        Long rank = redis.opsForZSet().rank(zKey, queueId);
+        if (rank == null) {
+            return new QueueStatusResponse(-1, -1, false);
         }
 
         int position = rank.intValue() + 1;
 
-        // 5. ETA 계산 (최근 3분 평균)
+        // 5. ETA 계산 (최근 3분 평균 처리율 기반)
         int ratePerMin = recentThroughputPerMinute(eventId, 3);
         if (ratePerMin <= 0) ratePerMin = 1;
-        int eta = (int) Math.ceil((double) position / ratePerMin);
 
-        return new QueueStatusResponse(position, eta, allowed, token);
+        // 초 단위 ETA (UX 개선)
+        int etaSeconds = (int) Math.ceil((position * 60.0) / ratePerMin);
+
+        return new QueueStatusResponse(position, etaSeconds, false, null);
     }
 
+    /* 3분 간격 평균 처리 시간 계산 */
     private int recentThroughputPerMinute(String eventId, int windowMinutes) {
         long nowMin = System.currentTimeMillis() / 60000L;
         long sum = 0;
@@ -126,6 +126,7 @@ public class QueueService {
         }
         return (int)(sum / Math.max(windowMinutes, 1));
     }
+    
 
     /* 입창 처리: ZPOPMIN + allowed토큰 + 처리량 카운트 (Lua, 원자) */    
     private static final String ALLOW_NEXT_LUA =
@@ -171,7 +172,7 @@ public class QueueService {
     public boolean heartbeat(String eventId, String queueId) {
         Boolean exists = redis.hasKey(sessionKey(eventId, queueId));
         if (Boolean.TRUE.equals(exists)) {
-            redis.opsForValue().set(sessionKey(eventId, queueId), "waiting", Duration.ofMinutes(60));
+            redis.opsForValue().set(sessionKey(eventId, queueId), "waiting", Duration.ofSeconds(heartbeatDurationSecond));
             return true;
         }
         return false;

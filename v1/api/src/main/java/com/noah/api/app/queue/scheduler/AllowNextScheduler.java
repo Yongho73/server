@@ -66,7 +66,7 @@ public class AllowNextScheduler {
         });
     }
 
-    @Scheduled(fixedDelay = 5000)
+    //@Scheduled(fixedDelay = 5000)
     public void checkExpiredAndAllowNext() {
         for (String eventId : eventIds) {
 
