@@ -34,9 +34,9 @@ queue:
       validitySecond: 90
     eventIds:
       - GD2501794
-      - GD2502001
-      - GD2503005
+#      - GD2502001
+#      - GD2503005
     initialAllowLimit:
       GD2501794: 1
-      GD2502001: 1
-      GD2503005: 1
+#      GD2502001: 1
+#      GD2503005: 1
