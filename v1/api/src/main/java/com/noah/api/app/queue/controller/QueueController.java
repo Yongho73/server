@@ -15,6 +15,8 @@ import com.noah.api.app.queue.entity.QueueJoinResponse;
 import com.noah.api.app.queue.entity.QueueStatusResponse;
 import com.noah.api.app.queue.service.QueueService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,8 +29,8 @@ public class QueueController {
 	private final QueueService queueService;
 
     @PostMapping("/join")
-    public QueueJoinResponse join(@RequestBody QueueJoinRequest req) {
-        return queueService.joinQueue(req.getEventId());
+    public QueueJoinResponse join(@RequestBody QueueJoinRequest req, HttpServletRequest request, HttpServletResponse response) {
+        return queueService.joinQueue(req.getEventId(), request, response);
     }
 
     @GetMapping("/checkStatus/{eventId}/{queueId}")

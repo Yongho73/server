@@ -1,5 +1,6 @@
 package com.noah.api.app.queue.service;
 
+ 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
@@ -11,6 +12,8 @@ import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
 import com.noah.api.app.queue.entity.BulkJoinRequest;
@@ -18,6 +21,9 @@ import com.noah.api.app.queue.entity.QueueJoinResponse;
 import com.noah.api.app.queue.entity.QueueStatusResponse;
 import com.noah.api.app.queue.provider.TokenProvider;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,34 +53,73 @@ public class QueueService {
     
 
     /* Key Helpers */
-    private String slotTag(String eventId)                { return "{" + eventId + "}"; }
-    private String zsetKey(String eventId)                { return "queue"   + slotTag(eventId) + ":zset"; }
-    private String seqKey(String eventId)                 { return "queue"   + slotTag(eventId) + ":seq"; }
-    private String rateKey(String eventId, long minute)   { return "queue"   + slotTag(eventId) + ":rate:" + minute; }
-    private String sessionKey(String eventId, String qid) { return "session" + slotTag(eventId) + ":" + qid; }
-    private String allowedKey(String eventId, String qid) { return "allowed" + slotTag(eventId) + ":" + qid; }
+    private String slotTag(String eventId)                    { return "{" + eventId + "}"; }
+    private String zsetKey(String eventId)                    { return "queue"   + slotTag(eventId) + ":zset"; }
+    private String seqKey(String eventId)                     { return "queue"   + slotTag(eventId) + ":seq"; }
+    private String rateKey(String eventId, long minute)       { return "queue"   + slotTag(eventId) + ":rate:" + minute; }
+    private String sessionKey(String eventId, String qid)     { return "session" + slotTag(eventId) + ":" + qid; }
+    private String allowedKey(String eventId, String qid)     { return "allowed" + slotTag(eventId) + ":" + qid; }
+    private String deviceKey(String eventId, String deviceId) { return "queue"   + slotTag(eventId) + ":device:" + deviceId; }
 
 
     /* 대기열 입장: ZADD(O(logN)) */
-    public QueueJoinResponse joinQueue(String eventId) {
+    public QueueJoinResponse joinQueue(String eventId, HttpServletRequest request, HttpServletResponse response) {
     	
     	if (!queueServiceFlagRedis.isEnabled(eventId)) { // 큐 등록하지 않고 즉시 입장 처리            
             return new QueueJoinResponse(UUID.randomUUID().toString(), 0, 0);
         }
     	
+    	// 1) Device ID 추출
+        String deviceId = null;
+        if (request.getCookies() != null) {
+            for (Cookie c : request.getCookies()) {
+                if ("DEVICE_ID".equals(c.getName())) {
+                    deviceId = c.getValue();
+                    break;
+                }
+            }
+        }
+
+        // 2) 없으면 새로 발급 + 쿠키 저장
+        if (deviceId == null) {
+            deviceId = UUID.randomUUID().toString();
+            ResponseCookie cookie = ResponseCookie.from("DEVICE_ID", deviceId)
+            		.httpOnly(true)                // JS에서는 접근 못 하게 (보안)
+                    .secure(false)                 // 로컬 테스트면 false, 운영 HTTPS면 true 쿠키 → 로컬은 secure=false, 운영 HTTPS에서는 secure=true
+                    .sameSite("Lax")               // Strict → 새 탭/리다이렉트 시 문제됨, 로컬 배포 .sameSite("Lax") (또는 크로스 오리진이면 "None"), 운영 배포 .sameSite("None") (크로스 도메인에서 반드시 None)
+                    .path("/")
+                    .maxAge(Duration.ofDays(30))
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+            log.info("새 Device ID 발급: {}", deviceId);
+        }
+        
+        // 3) 기존 queueId 확인
+        String existingQid = redis.opsForValue().get(deviceKey(eventId, deviceId));
+        if (existingQid != null) {
+            Long rank = redis.opsForZSet().rank(zsetKey(eventId), existingQid);
+            int position = rank == null ? -1 : rank.intValue() + 1;
+            return new QueueJoinResponse(existingQid, position, -1);
+        }
+
+        // 4) 새 queueId 발급
         String qid = UUID.randomUUID().toString();
-        Long seq   = redis.opsForValue().increment(seqKey(eventId)); // 등록 시퀀스 증가      
+        Long seq = redis.opsForValue().increment(seqKey(eventId));
         if (seq == null) seq = 1L;
 
         redis.opsForZSet().add(zsetKey(eventId), qid, seq.doubleValue());
-        redis.opsForValue().set(sessionKey(eventId, qid), "waiting", Duration.ofSeconds(heartbeatDurationSecond)); // heartbeat로 연장
+        redis.opsForValue().set(sessionKey(eventId, qid), "waiting",
+                Duration.ofSeconds(heartbeatDurationSecond));
+
+        // Device → queueId 매핑
+        redis.opsForValue().set(deviceKey(eventId, deviceId), qid,
+                Duration.ofSeconds(heartbeatDurationSecond));
 
         Long rank = redis.opsForZSet().rank(zsetKey(eventId), qid);
         int position = rank == null ? -1 : rank.intValue() + 1;
-
-        return new QueueJoinResponse(qid, position, -1); // 최초 등롟히 예상 시간을 따로 넣지 않고, checkStatus 에서 예상 시간을 따로 구해 최초는 -1 로 등록함
+        return new QueueJoinResponse(qid, position, -1);
     }
-
+    
     
     /* 대기열 상태 체크: ZRANK(O(logN)) + 동적 ETA + 청소 */
     public QueueStatusResponse checkStatus(String eventId, String queueId) {
