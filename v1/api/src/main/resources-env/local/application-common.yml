@@ -37,6 +37,6 @@ queue:
 #      - GD2502001
 #      - GD2503005
     initialAllowLimit:
-      GD2501794: 1
+      GD2501794: 300
 #      GD2502001: 1
 #      GD2503005: 1

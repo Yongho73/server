@@ -21,8 +21,10 @@ public class TokenService {
     private long validitySecond; 
 	
 	public String createToken(String eventId, String queueId) {
+
 		// ✅ 새 JWT 생성
-	    String newToken = tokenProvider.createToken(eventId, queueId);	    
+	    String newToken = tokenProvider.createToken(eventId, queueId);	
+
 	    return newToken;
 	}
 	
@@ -38,9 +40,6 @@ public class TokenService {
 
 	    // ✅ 새 JWT 생성
 	    String newToken = tokenProvider.createToken(eventId, queueId);
-
-	    // ✅ TTL 10분으로 갱신
-	    redis.opsForValue().set(allowedKey, newToken, Duration.ofSeconds(validitySecond));
 	    
 	    return newToken;
 	}

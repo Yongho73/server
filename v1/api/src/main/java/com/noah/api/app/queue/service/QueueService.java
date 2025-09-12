@@ -86,7 +86,7 @@ public class QueueService {
             ResponseCookie cookie = ResponseCookie.from("DEVICE_ID", deviceId)
             		.httpOnly(true)                // JS에서는 접근 못 하게 (보안)
                     .secure(false)                 // 로컬 테스트면 false, 운영 HTTPS면 true 쿠키 → 로컬은 secure=false, 운영 HTTPS에서는 secure=true
-                    .sameSite(false ? "Strict" : "Lax")               // Strict → 새 탭/리다이렉트 시 문제됨, 로컬 배포 .sameSite("Lax") (또는 크로스 오리진이면 "None"), 운영 배포 .sameSite("None") (크로스 도메인에서 반드시 None)
+                    .sameSite("Lax")               // Strict → 새 탭/리다이렉트 시 문제됨, 로컬 배포 .sameSite("Lax") (또는 크로스 오리진이면 "None"), 운영 배포 .sameSite("None") (크로스 도메인에서 반드시 None)
                     .path("/")
                     .maxAge(Duration.ofDays(30))
                     .build();
@@ -108,12 +108,8 @@ public class QueueService {
         if (seq == null) seq = 1L;
 
         redis.opsForZSet().add(zsetKey(eventId), qid, seq.doubleValue());
-        redis.opsForValue().set(sessionKey(eventId, qid), "waiting",
-                Duration.ofSeconds(heartbeatDurationSecond));
-
-        // Device → queueId 매핑
-        redis.opsForValue().set(deviceKey(eventId, deviceId), qid,
-                Duration.ofSeconds(heartbeatDurationSecond));
+        redis.opsForValue().set(sessionKey(eventId, qid), "waiting", Duration.ofSeconds(heartbeatDurationSecond));       
+        redis.opsForValue().set(deviceKey(eventId, deviceId), qid, Duration.ofSeconds(heartbeatDurationSecond)); // Device → queueId 매핑
 
         Long rank = redis.opsForZSet().rank(zsetKey(eventId), qid);
         int position = rank == null ? -1 : rank.intValue() + 1;
@@ -170,29 +166,49 @@ public class QueueService {
 
         int position = rank.intValue() + 1; // set 인텍스 0 부터 시작으로 맨 처음을 1을 설정
 
-        // 5. ETA 계산 (최근 3분 평균 처리율 기반)
-        int ratePerMin = recentThroughputPerMinute(eventId, windowMinutes);
+        
+        // 5. ETA 계산 (최근 6분 + 2분 가중치 평균 처리율 기반)
+        int avg6 = recentThroughputPerMinute(eventId, 6);
+        int avg2 = recentThroughputPerMinute(eventId, 2);
+        
+        if (avg6 == 0 && avg2 == 0) {
+            log.warn("ETA 계산: 최근 6분/2분 처리율 모두 0 → 처리중단 상태. ETA를 maxEtaMinutes로 강제 설정");
+            return new QueueStatusResponse(position, maxEtaMinutes, false, null);
+        }
+
+        // 가중치 적용 (6분 70%, 2분 30%)
+        int ratePerMin = (int) Math.round(avg6 * 0.7 + avg2 * 0.3);
         if (ratePerMin <= 0) ratePerMin = 1;
 
-        // 초 단위 ETA (UX 개선)
-        int etaMinutes = Math.min(((int) Math.ceil((double) position / Math.max(ratePerMin, 1))), maxEtaMinutes); // 최대 1시간까지만 노출
-        log.info("checkStatus: windowMinutes=[{}}, maxEtaMinutes=[{}]", windowMinutes, maxEtaMinutes);
+        int etaMinutes = Math.min((int) Math.ceil((double) position / ratePerMin), maxEtaMinutes);
 
+        log.info("checkStatus: position={}, avg6={}, avg2={}, ratePerMin={}, etaMinutes={}, maxEtaMinutes={}",
+                position, avg6, avg2, ratePerMin, etaMinutes, maxEtaMinutes);
+        
         return new QueueStatusResponse(position, etaMinutes, false, null);
     }
 
     /* 3분 간격 평균 처리 시간 계산 */
     private int recentThroughputPerMinute(String eventId, int windowMinutes) {
+        if (windowMinutes <= 0) windowMinutes = 1;
+
         long nowMin = System.currentTimeMillis() / 60000L;
         long sum = 0;
+        int count = 0;
+
         for (int i = 0; i < windowMinutes; i++) {
             String k = rateKey(eventId, nowMin - i);
             String v = redis.opsForValue().get(k);
             if (v != null) {
-                try { sum += Long.parseLong(v); } catch (NumberFormatException ignored) {}
+                try {
+                    sum += Long.parseLong(v);
+                    count++;
+                } catch (NumberFormatException e) {
+                    log.warn("recentThroughputPerMinute: invalid number format key={}, value={}", k, v);
+                }
             }
         }
-        return (int)(sum / Math.max(windowMinutes, 1));
+        return (int)(sum / Math.max(count, 1));
     }
     
 
