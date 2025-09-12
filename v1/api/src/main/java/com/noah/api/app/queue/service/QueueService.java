@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
@@ -18,23 +18,32 @@ import com.noah.api.app.queue.entity.QueueJoinResponse;
 import com.noah.api.app.queue.entity.QueueStatusResponse;
 import com.noah.api.app.queue.provider.TokenProvider;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class QueueService {
-
-	@Autowired
-    private QueueServiceFlagRedis queueServiceFlagRedis;
-	private final TokenProvider tokenProvider = new TokenProvider();
-	private final StringRedisTemplate redis;
 	
-	// 하트비트 TTL
-	private int heartbeatDurationSecond = 90;
+    private final QueueServiceFlagRedis queueServiceFlagRedis;
+	private final TokenProvider tokenProvider;
+	private final StringRedisTemplate redis;
 
-    public QueueService(StringRedisTemplate redisTemplate) {
-        this.redis = redisTemplate;
-    }
+	// 하트비트 TTL
+    @Value("${queue.system.waitSession.validitySecond}")     
+	private int heartbeatDurationSecond;
+    
+    @Value("${queue.system.token.validityMillis}")
+    private long tokenValidityMillis;
+    
+	// 최대 표시 할 대기 시간
+    @Value("${queue.system.maxEtaMinutes}")     
+	private int maxEtaMinutes;
+    
+	// 평균 계산 대기 시간
+    @Value("${queue.system.windowMinutes}")     
+	private int windowMinutes;
     
 
     /* Key Helpers */
@@ -54,12 +63,11 @@ public class QueueService {
         }
     	
         String qid = UUID.randomUUID().toString();
-
-        Long seq = redis.opsForValue().increment(seqKey(eventId)); // score로 사용
+        Long seq   = redis.opsForValue().increment(seqKey(eventId)); // 등록 시퀀스 증가      
         if (seq == null) seq = 1L;
 
         redis.opsForZSet().add(zsetKey(eventId), qid, seq.doubleValue());
-        redis.opsForValue().set(sessionKey(eventId, qid), "waiting", Duration.ofMinutes(heartbeatDurationSecond)); // heartbeat로 연장
+        redis.opsForValue().set(sessionKey(eventId, qid), "waiting", Duration.ofSeconds(heartbeatDurationSecond)); // heartbeat로 연장
 
         Long rank = redis.opsForZSet().rank(zsetKey(eventId), qid);
         int position = rank == null ? -1 : rank.intValue() + 1;
@@ -70,6 +78,8 @@ public class QueueService {
     
     /* 대기열 상태 체크: ZRANK(O(logN)) + 동적 ETA + 청소 */
     public QueueStatusResponse checkStatus(String eventId, String queueId) {
+    	
+    	log.info("checkStatus: eventId=[{}], queueId=[{}}, enabled[{}]", eventId, queueId, queueServiceFlagRedis.isEnabled(eventId));
 
         // 1. 대기열 꺼진 상태면 바로 통과
         if (!queueServiceFlagRedis.isEnabled(eventId)) {
@@ -84,11 +94,21 @@ public class QueueService {
 
         // 2. allowedKey 먼저 조회 (허용 토큰 있으면 최우선)
         String token = redis.opsForValue().get(allowedKey);
+        
+        log.info("checkStatus: allowedKey=[{}], token=[{}}", allowedKey, token);
+        
         if (token != null) {
+            // 허용 토큰이 있다면 → 만료 임박 여부 확인
+            if (tokenProvider.isExpiringSoon(token)) {
+                token = tokenProvider.createToken(eventId, queueId);
+                redis.opsForValue().set(allowedKey, token, Duration.ofSeconds(heartbeatDurationSecond));
+            }
             return new QueueStatusResponse(0, 0, true, token);
         }
 
-        // 3. 세션이 없다면 → 유령 queueId 처리
+        // 3. 세션이 없다면 → 유령 queueId 처리        
+        log.info("checkStatus: sessionKey=[{}], hasKey=[{}}", sessionKey, redis.hasKey(sessionKey));
+        
         if (!redis.hasKey(sessionKey)) {
             // 안전하게 ZSET에서도 제거
             redis.opsForZSet().remove(zKey, queueId);
@@ -97,18 +117,21 @@ public class QueueService {
 
         // 4. 순번 확인
         Long rank = redis.opsForZSet().rank(zKey, queueId);
+        log.info("checkStatus: rank=[{}}", rank);
+        
         if (rank == null) {
             return new QueueStatusResponse(-1, -1, false);
         }
 
-        int position = rank.intValue() + 1;
+        int position = rank.intValue() + 1; // set 인텍스 0 부터 시작으로 맨 처음을 1을 설정
 
         // 5. ETA 계산 (최근 3분 평균 처리율 기반)
-        int ratePerMin = recentThroughputPerMinute(eventId, 3);
+        int ratePerMin = recentThroughputPerMinute(eventId, windowMinutes);
         if (ratePerMin <= 0) ratePerMin = 1;
 
         // 초 단위 ETA (UX 개선)
-        int etaMinutes = Math.min(((int) Math.ceil((double) position / Math.max(ratePerMin, 1))), 60); // 최대 1시간까지만 노출
+        int etaMinutes = Math.min(((int) Math.ceil((double) position / Math.max(ratePerMin, 1))), maxEtaMinutes); // 최대 1시간까지만 노출
+        log.info("checkStatus: windowMinutes=[{}}, maxEtaMinutes=[{}]", windowMinutes, maxEtaMinutes);
 
         return new QueueStatusResponse(position, etaMinutes, false, null);
     }
@@ -128,40 +151,59 @@ public class QueueService {
     }
     
 
-    /* 입창 처리: ZPOPMIN + allowed토큰 + 처리량 카운트 (Lua, 원자) */    
+    /* 
+     * 입장 처리: ZPOPMIN + 처리량 카운트 (Lua, 원자적 실행 보장)
+     *  - ZSET(대기열)에서 맨 앞 사용자(queueId)를 하나 꺼낸다.
+     *  - 분당 허용 카운터(rateKey)를 증가시킨다.
+     *  - 허용된 queueId를 리턴한다.
+     * 
+     * ✅ allowedKey 생성/TTL 관리 → TokenProvider.createToken()에서만 처리
+     */
     private static final String ALLOW_NEXT_LUA =
-        // KEYS[1]=zKey, KEYS[2]=rateKey, ARGV[1]=allowedTTL, ARGV[2]=rateTTL
-        "local popped = redis.call('ZPOPMIN', KEYS[1], 1) " +
+        // KEYS[1] = zKey (대기열 ZSET), KEYS[2] = rateKey
+        "local popped = redis.call('ZPOPMIN', KEYS[1], 1) " + 
         "if (popped == nil or #popped == 0) then return nil end " +
         "local qid = popped[1] " +
-        "redis.call('SET', 'allowed'..ARGV[3]..':'..qid, 'true', 'EX', tonumber(ARGV[1])) " +
+        // allowedKey 생성 부분 제거 (자바 createToken에서 처리)
         "redis.call('INCR', KEYS[2]) " +
-        "redis.call('EXPIRE', KEYS[2], tonumber(ARGV[2])) " +
+        "redis.call('EXPIRE', KEYS[2], tonumber(ARGV[1])) " +
         "return qid ";
 
     private final RedisScript<String> ALLOW_NEXT_SCRIPT = RedisScript.of(ALLOW_NEXT_LUA, String.class);
 
+    /**
+     * allowNext
+     * - 대기열 ZSET에서 맨 앞 사용자 1명 꺼내서 반환
+     * - 분당 허용 카운터 증가
+     * - JWT 토큰을 발급해서 반환
+     */
     public String allowNext(String eventId) {
-        
-    	if (!queueServiceFlagRedis.isEnabled(eventId)) { // 대기열 꺼진 상태에서는 강제 허용 불필요
-            return null; 
+        if (!queueServiceFlagRedis.isEnabled(eventId)) { 
+            // 대기열이 꺼진 상태라면 입장 처리 불필요
+            return null;
         }
- 
+
         try {
-        	
-        	String qid = redis.execute(
+            /*
+             * KEYS[1] = zsetKey(eventId) → 대기열 ZSET (이벤트별 대기열)
+             * KEYS[2] = rateKey(eventId, minute) → 현재 분 단위 허용 카운터
+             * ARGV[1] = "7200" → rate TTL (초 단위, 2시간 유지)
+             */
+            String qid = redis.execute(
                     ALLOW_NEXT_SCRIPT,
-                    Arrays.asList(zsetKey(eventId), rateKey(eventId, (System.currentTimeMillis() / 60000L))),
-                    "300", "7200", slotTag(eventId) // allowedTTL, rateTTL
+                    Arrays.asList(
+                        zsetKey(eventId), 
+                        rateKey(eventId, (System.currentTimeMillis() / 60000L)) // 현재 시각을 분 단위로 변환
+                    ),
+                    "7200", // rate TTL
+                    slotTag(eventId) // Redis 해시태그(샤딩 고려시 사용)
             );
 
             if (qid == null) return null;
-                        
-            String token = tokenProvider.createToken(eventId, qid); // ✅ JWT 토큰 생성 (10분)            
-            redis.opsForValue().set(allowedKey(eventId, qid), token, Duration.ofMinutes(10)); // ✅ Redis에 allowed 저장 (TTL 10분)
 
-            return token; // 토큰 반환 (프론트에 전달)
-                
+            // ✅ JWT 토큰 생성 (createToken에서 allowedKey 갱신까지 처리)
+            return tokenProvider.createToken(eventId, qid);
+
         } catch (DataAccessException e) {
             log.error("allowNext 실패", e);
             return null;
@@ -224,13 +266,9 @@ public class QueueService {
                         // ✅ 하지만 bulk insert에서는 응답값이 null이므로 i+1을 score로 사용
                         operations.opsForValue().increment(seqKey(eventId)); // 값은 무시
                         operations.opsForZSet().add(zsetKey(eventId), qid, i + 1);
-
                         // ✅ 세션 생성 (TTL 60분)
-                        operations.opsForValue().set(
-                            sessionKey(eventId, qid),
-                            "waiting",
-                            60, TimeUnit.MINUTES
-                        );
+                        operations.opsForValue().set(sessionKey(eventId, qid), "waiting", heartbeatDurationSecond, TimeUnit.SECONDS);
+
                     }
                     return null;
                 }
@@ -240,5 +278,4 @@ public class QueueService {
         long endJoin = System.currentTimeMillis();
         return count + "건 등록 완료. 소요 시간: " + (endJoin - startJoin) + " ms";
     }
-
 }

@@ -34,15 +34,15 @@ spring:
     redis:
       client-type: lettuce
       timeout: 2s
-      # password: YOUR_PASSWORD  # compose에 --requirepass를 썼다면 주석 해제하고 비밀번호 입력
+      # password: YOUR_PASSWORD  # redis.conf에서 requirepass 썼으면 해제 후 입력
       cluster:
         nodes:
-          - host.docker.internal:7001
-          - host.docker.internal:7002
-          - host.docker.internal:7003
-          - host.docker.internal:7004
-          - host.docker.internal:7005
-          - host.docker.internal:7006
+          - 192.168.0.41:7001
+          - 192.168.0.41:7002
+          - 192.168.0.41:7003
+          - 192.168.0.41:7004
+          - 192.168.0.41:7005
+          - 192.168.0.41:7006
       lettuce:
         pool:
           max-active: 16
@@ -50,8 +50,8 @@ spring:
           min-idle: 0
         cluster:
           refresh:
-            adaptive: true   # 토폴로지 변경 자동 반영
-            period: 30s      # 주기적 토폴로지 리프레시
+            adaptive: true   # 토폴로지 자동 반영
+            period: 30s      # 30초마다 주기적으로 갱신
 
 logging:
   level:

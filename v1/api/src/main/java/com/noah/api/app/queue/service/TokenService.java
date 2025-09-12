@@ -2,21 +2,23 @@ package com.noah.api.app.queue.service;
 
 import java.time.Duration;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.noah.api.app.queue.provider.TokenProvider;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class TokenService {
 	
-	private final TokenProvider tokenProvider = new TokenProvider();
-	
+	private final TokenProvider tokenProvider;
 	private final StringRedisTemplate redis;
 	
-	public TokenService(StringRedisTemplate redisTemplate) {
-        this.redis = redisTemplate;
-    }
+	@Value("${queue.system.waitSession.validitySecond}")
+    private long validitySecond; 
 	
 	public String createToken(String eventId, String queueId) {
 		// ✅ 새 JWT 생성
@@ -38,7 +40,7 @@ public class TokenService {
 	    String newToken = tokenProvider.createToken(eventId, queueId);
 
 	    // ✅ TTL 10분으로 갱신
-	    redis.opsForValue().set(allowedKey, newToken, Duration.ofMinutes(10));
+	    redis.opsForValue().set(allowedKey, newToken, Duration.ofSeconds(validitySecond));
 	    
 	    return newToken;
 	}

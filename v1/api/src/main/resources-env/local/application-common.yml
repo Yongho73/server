@@ -13,6 +13,7 @@ settings:
     - http://localhost:8080
     - http://localhost:5173
     - http://localhost:3000
+    - http://localhost:8081
   
 spring:  
   datasource:    
@@ -21,3 +22,21 @@ spring:
       url: jdbc:hsqldb:mem:testdb # D:\programming\hsqldb-2.7.3\hsqldb\lib>java -cp hsqldb.jar org.hsqldb.util.DatabaseManagerSwing --url jdbc:hsqldb:mem:testdb --user sa --password "1234"
       username: sa
       password: 1234
+
+queue:
+  system:
+    windowMinutes: 3
+    maxEtaMinutes: 180
+    token:
+      secretKey: MO6c+g04gJeWYzeZTTTT1eEN7jo06sR18BhsiyRNrYg=
+      validityMillis: 180000
+    waitSession:
+      validitySecond: 90
+    eventIds:
+      - GD2501794
+      - GD2502001
+      - GD2503005
+    initialAllowLimit:
+      GD2501794: 1
+      GD2502001: 1
+      GD2503005: 1

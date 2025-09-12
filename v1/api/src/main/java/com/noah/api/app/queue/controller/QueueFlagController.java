@@ -13,8 +13,8 @@ import com.noah.api.app.queue.service.QueueServiceFlagRedis;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/queue/flag")
 @RequiredArgsConstructor
+@RequestMapping("/api/queue/flag")
 public class QueueFlagController {
 
     private final QueueServiceFlagRedis flag;

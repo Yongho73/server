@@ -1,15 +1,14 @@
 package com.noah.api.app.queue.scheduler;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.noah.api.app.queue.properties.QueueProperties;
 import com.noah.api.app.queue.service.QueueService;
 
 import lombok.RequiredArgsConstructor;
@@ -22,17 +21,10 @@ public class AllowNextScheduler {
 
     private final QueueService queueService;
     private final StringRedisTemplate redis;
-
-    private final List<String> eventIds = List.of("GD2501794");
-
+    private final QueueProperties queueProperties;
+    
     // 이벤트별 직전 허용자 수 저장 (현재 남아있는 allowed 키 개수)
     private final ConcurrentHashMap<String, AtomicInteger> prevAllowedCount = new ConcurrentHashMap<>();
-
-    // 이벤트별 최초 허용 인원 (이 값은 환경설정/DB로도 뺄 수 있음)
-    @SuppressWarnings("serial")
-	private final ConcurrentHashMap<String, Integer> initialAllowLimit = new ConcurrentHashMap<>() {{
-        put("GD2501794", 2); // EVT123 은 최초 10명 허용
-    }};
 
     private String allowedKeyPattern(String eventId) {
         return "allowed{" + eventId + "}:*";
@@ -68,11 +60,11 @@ public class AllowNextScheduler {
 
     //@Scheduled(fixedDelay = 5000)
     public void checkExpiredAndAllowNext() {
-        for (String eventId : eventIds) {
+        for (String eventId : queueProperties.getEventIds()) {
 
             int current = scanAllowedCount(eventId);
             int prev = prevAllowedCount.computeIfAbsent(eventId, k -> new AtomicInteger(0)).get();
-            int initialLimit = initialAllowLimit.getOrDefault(eventId, 0);
+            int initialLimit = queueProperties.getInitialAllowLimit().getOrDefault(eventId, 0);
 
             int toAllow = 0;
 
@@ -80,15 +72,13 @@ public class AllowNextScheduler {
             if (current < initialLimit) {
                 int need = initialLimit - current;
                 toAllow = need;
-                log.info("[initial-fill] eventId={} -> 현재 {}명, limit {}명 → {}명 보충",
-                         eventId, current, initialLimit, need);
+                log.info("[initial-fill] eventId={} -> 현재 {}명, limit {}명 → {}명 보충", eventId, current, initialLimit, need);
             }
             // ✅ 2. limit 은 이미 채워졌지만 만료자가 생긴 경우
             else if (current < prev) {
                 int expiredCount = prev - current;
                 toAllow = expiredCount;
-                log.info("[expired] eventId={} -> {}명 만료됨, {}명 새로 허용",
-                         eventId, expiredCount, toAllow);
+                log.info("[expired] eventId={} -> {}명 만료됨, {}명 새로 허용", eventId, expiredCount, toAllow);
             }
 
             // ✅ allowNext 실행
@@ -99,8 +89,7 @@ public class AllowNextScheduler {
 
             // 현재값 갱신
             prevAllowedCount.get(eventId).set(current + toAllow);
-            log.info("eventId=[{}], current(before)=[{}], afterAllow=[{}], prev=[{}], limit=[{}]",
-                     eventId, current, current + toAllow, prev, initialLimit);
+            log.info("eventId=[{}], current(before)=[{}], afterAllow=[{}], prev=[{}], limit=[{}]", eventId, current, current + toAllow, prev, initialLimit);
         }
     }
 }

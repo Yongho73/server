@@ -9,16 +9,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.noah.api.app.queue.service.TokenService;
 
+import lombok.RequiredArgsConstructor;
+
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/queue")
 public class TokenController {
 	
-	private final TokenService tokenService;
-	
-	public TokenController(TokenService tokenService) {
-        this.tokenService = tokenService;
-    }
+	private final TokenService tokenService; 
 	
 	@PostMapping("/token/create/{eventId}/{queueId}")
 	public ResponseEntity<String> createToken(
