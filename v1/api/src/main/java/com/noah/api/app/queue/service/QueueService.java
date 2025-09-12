@@ -86,7 +86,7 @@ public class QueueService {
             ResponseCookie cookie = ResponseCookie.from("DEVICE_ID", deviceId)
             		.httpOnly(true)                // JS에서는 접근 못 하게 (보안)
                     .secure(false)                 // 로컬 테스트면 false, 운영 HTTPS면 true 쿠키 → 로컬은 secure=false, 운영 HTTPS에서는 secure=true
-                    .sameSite("Lax")               // Strict → 새 탭/리다이렉트 시 문제됨, 로컬 배포 .sameSite("Lax") (또는 크로스 오리진이면 "None"), 운영 배포 .sameSite("None") (크로스 도메인에서 반드시 None)
+                    .sameSite(false ? "Strict" : "Lax")               // Strict → 새 탭/리다이렉트 시 문제됨, 로컬 배포 .sameSite("Lax") (또는 크로스 오리진이면 "None"), 운영 배포 .sameSite("None") (크로스 도메인에서 반드시 None)
                     .path("/")
                     .maxAge(Duration.ofDays(30))
                     .build();

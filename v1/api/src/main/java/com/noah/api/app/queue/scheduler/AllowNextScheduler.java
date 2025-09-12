@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.noah.api.app.queue.properties.QueueProperties;
@@ -58,7 +59,7 @@ public class AllowNextScheduler {
         });
     }
 
-    //@Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 5000)
     public void checkExpiredAndAllowNext() {
         for (String eventId : queueProperties.getEventIds()) {
 
