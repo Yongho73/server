@@ -22,7 +22,29 @@ spring:
       url: jdbc:hsqldb:mem:testdb # D:\programming\hsqldb-2.7.3\hsqldb\lib>java -cp hsqldb.jar org.hsqldb.util.DatabaseManagerSwing --url jdbc:hsqldb:mem:testdb --user sa --password "1234"
       username: sa
       password: 1234
-
+  # Redis 클러스터 설정
+  data:
+    redis:
+      client-type: lettuce
+      timeout: 2s
+      # password: YOUR_PASSWORD  # redis.conf에서 requirepass 썼으면 해제 후 입력
+      cluster:
+        nodes:
+          - host.docker.internal:7001
+          - host.docker.internal:7002
+          - host.docker.internal:7003
+          - host.docker.internal:7004
+          - host.docker.internal:7005
+          - host.docker.internal:7006
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 0
+        cluster:
+          refresh:
+            adaptive: true   # 토폴로지 자동 반영
+            period: 30s      # 30초마다 주기적으로 갱신
 queue:
   system:
     maxEtaMinutes: 180
