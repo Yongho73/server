@@ -116,7 +116,7 @@ public class QueueService {
     /* 대기열 상태 체크: ZRANK(O(logN)) + 동적 ETA + 청소 */
     public QueueStatusResponse checkStatus(String eventId, String queueId) {
     	
-    	log.info("checkStatus: eventId=[{}], queueId=[{}}, enabled[{}]", eventId, queueId, queueServiceFlagRedis.isEnabled(eventId));
+    	//log.info("checkStatus: eventId=[{}], queueId=[{}}, enabled[{}]", eventId, queueId, queueServiceFlagRedis.isEnabled(eventId));
 
         // 1. 대기열 꺼진 상태면 바로 통과
         if (!queueServiceFlagRedis.isEnabled(eventId)) {
@@ -132,7 +132,7 @@ public class QueueService {
         // 2. allowedKey 먼저 조회 (허용 토큰 있으면 최우선)
         String token = redis.opsForValue().get(allowedKey);
         
-        log.info("checkStatus: allowedKey=[{}], token=[{}}", allowedKey, token);
+        //log.info("checkStatus: allowedKey=[{}], token=[{}}", allowedKey, token);
         
         if (token != null) {
             // 허용 토큰이 있다면 → 만료 임박 여부 확인
@@ -144,7 +144,7 @@ public class QueueService {
         }
 
         // 3. 세션이 없다면 → 유령 queueId 처리        
-        log.info("checkStatus: sessionKey=[{}], hasKey=[{}}", sessionKey, redis.hasKey(sessionKey));
+        //log.info("checkStatus: sessionKey=[{}], hasKey=[{}}", sessionKey, redis.hasKey(sessionKey));
         
         if (!redis.hasKey(sessionKey)) {
             // 안전하게 ZSET에서도 제거
@@ -154,7 +154,7 @@ public class QueueService {
 
         // 4. 순번 확인
         Long rank = redis.opsForZSet().rank(zKey, queueId);
-        log.info("checkStatus: rank=[{}}", rank);
+        //log.info("checkStatus: rank=[{}}", rank);
         
         if (rank == null) {
             return new QueueStatusResponse(-1, -1, false);
@@ -168,7 +168,7 @@ public class QueueService {
         int avg2 = recentThroughputPerMinute(eventId, 2);
         
         if (avg6 == 0 && avg2 == 0) {
-            log.warn("ETA 계산: 최근 6분/2분 처리율 모두 0 → 처리중단 상태. ETA를 maxEtaMinutes로 강제 설정");
+            // log.warn("ETA 계산: 최근 6분/2분 처리율 모두 0 → 처리중단 상태. ETA를 maxEtaMinutes로 강제 설정");
             return new QueueStatusResponse(position, maxEtaMinutes, false, null);
         }
 
@@ -178,7 +178,7 @@ public class QueueService {
 
         int etaMinutes = Math.min((int) Math.ceil((double) position / ratePerMin), maxEtaMinutes);
 
-        log.info("checkStatus: position={}, avg6={}, avg2={}, ratePerMin={}, etaMinutes={}, maxEtaMinutes={}",
+        log.info("> [하트비트] position={}, avg6={}, avg2={}, ratePerMin={}, etaMinutes={}, maxEtaMinutes={}",
                 position, avg6, avg2, ratePerMin, etaMinutes, maxEtaMinutes);
         
         return new QueueStatusResponse(position, etaMinutes, false, null);

@@ -37,8 +37,7 @@ public class QueueController {
     public QueueStatusResponse checkStatus(
     	@PathVariable("eventId") String eventId, 
     	@PathVariable("queueId") String queueId   	
-    ) {
-        log.info("status: eventId=[{}], queueId=[{}]", eventId, queueId);
+    ) {        
     	return queueService.checkStatus(eventId, queueId);
     }
 

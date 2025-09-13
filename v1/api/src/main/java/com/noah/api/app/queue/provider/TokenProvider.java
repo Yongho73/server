@@ -40,8 +40,8 @@ public class TokenProvider {
     
     public String createToken(String eventId, String queueId) {
     	
-    	log.info("createToken: eventId=[{}], queueId=[{}], tokenSecretKey=[{}], tokenValidityMillis=[{}]", eventId, queueId, tokenSecretKey, tokenValidityMillis);
-    	log.info("createToken: allowedKey=[{}]", allowedKey(eventId, queueId));
+    	//log.info("createToken: eventId=[{}], queueId=[{}], tokenSecretKey=[{}], tokenValidityMillis=[{}]", eventId, queueId, tokenSecretKey, tokenValidityMillis);
+    	//log.info("createToken: allowedKey=[{}]", allowedKey(eventId, queueId));
     	
         long now = System.currentTimeMillis();        
         byte[] decodedKey = Base64.getDecoder().decode(tokenSecretKey);
@@ -88,7 +88,7 @@ public class TokenProvider {
             long remainingMinutes = TimeUnit.MILLISECONDS.toMinutes(remaining);
             long remainingSeconds = TimeUnit.MILLISECONDS.toSeconds(remaining) % 60;
 
-            log.info("isExpiringSoon: remaining=[{} ms] ({}분 {}초 남음)", remaining, remainingMinutes, remainingSeconds);
+            //log.info("isExpiringSoon: remaining=[{} ms] ({}분 {}초 남음)", remaining, remainingMinutes, remainingSeconds);
 
             // ✅ 만료까지 1분 이하 남으면 true
             return remaining <= 60_000;
