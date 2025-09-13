@@ -47,10 +47,6 @@ public class QueueService {
     @Value("${queue.system.maxEtaMinutes}")     
 	private int maxEtaMinutes;
     
-	// 평균 계산 대기 시간
-    @Value("${queue.system.windowMinutes}")     
-	private int windowMinutes;
-    
 
     /* Key Helpers */
     private String slotTag(String eventId)                    { return "{" + eventId + "}"; }
@@ -188,7 +184,7 @@ public class QueueService {
         return new QueueStatusResponse(position, etaMinutes, false, null);
     }
 
-    /* 3분 간격 평균 처리 시간 계산 */
+    /* 평균 처리 시간 계산 */
     private int recentThroughputPerMinute(String eventId, int windowMinutes) {
         if (windowMinutes <= 0) windowMinutes = 1;
 

@@ -25,7 +25,6 @@ spring:
 
 queue:
   system:
-    windowMinutes: 3
     maxEtaMinutes: 180
     token:
       secretKey: MO6c+g04gJeWYzeZTTTT1eEN7jo06sR18BhsiyRNrYg=
