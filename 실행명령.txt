@@ -35,11 +35,11 @@ nohup java \
 
 
 
-PS C:\WINDOWS\system32> Get-CimInstance Win32_Process -Filter "CommandLine LIKE '%api-0.0.1-SNAPSHOT.jar%'" | Select-Object ProcessId, CommandLine
+Get-CimInstance Win32_Process -Filter "CommandLine LIKE '%api-0.0.1-SNAPSHOT.jar%'" | Select-Object ProcessId, CommandLine
 
 ProcessId CommandLine
 --------- -----------
      6328 E:\jdk\jdk-23\bin\java.exe -Xms2g -Xmx2g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+ParallelRefProcEnabled...
 
 
-PS C:\WINDOWS\system32> Stop-Process -Id 6328
+Stop-Process -Id 6328
