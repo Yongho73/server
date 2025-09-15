@@ -40,9 +40,6 @@ public class TokenController {
 	    @PathVariable("queueId") String queueId  
 	) {
 
-	    String slotTag = "{" + eventId + "}";
-	    String allowedKey = "allowed" + slotTag + ":" + queueId;
-
 	    // Redis에 키가 있어야만 갱신
 	    String newToken = tokenService.refreshToken(eventId, queueId);
 	    

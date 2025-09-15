@@ -3,7 +3,6 @@ package com.noah.api.app.queue.provider;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -16,9 +15,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @RequiredArgsConstructor
 @Component
 public class TokenProvider {
@@ -85,8 +82,8 @@ public class TokenProvider {
             long remaining = expMillis - nowMillis;
             
             // ✅ 밀리초 → 분/초 변환
-            long remainingMinutes = TimeUnit.MILLISECONDS.toMinutes(remaining);
-            long remainingSeconds = TimeUnit.MILLISECONDS.toSeconds(remaining) % 60;
+            //long remainingMinutes = TimeUnit.MILLISECONDS.toMinutes(remaining);
+            //long remainingSeconds = TimeUnit.MILLISECONDS.toSeconds(remaining) % 60;
 
             //log.info("isExpiringSoon: remaining=[{} ms] ({}분 {}초 남음)", remaining, remainingMinutes, remainingSeconds);
 

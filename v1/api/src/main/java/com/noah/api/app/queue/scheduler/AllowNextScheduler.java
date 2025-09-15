@@ -59,7 +59,8 @@ public class AllowNextScheduler {
         });
     }
 
-    @Scheduled(fixedDelay = 5000)
+    @SuppressWarnings("unused")
+	@Scheduled(fixedDelay = 5000)
     public void checkExpiredAndAllowNext() {
         for (String eventId : queueProperties.getEventIds()) {
 
@@ -87,11 +88,11 @@ public class AllowNextScheduler {
             for (int i = 0; i < toAllow; i++) {
                 String token = queueService.allowNext(eventId);                
             }
-            log.info("> [입장] {}명 입장", toAllow);
+            //log.info("> [입장] {}명 입장", toAllow);
 
             // 현재값 갱신
             prevAllowedCount.get(eventId).set(current + toAllow);
-            log.info("> [갱신] eventId=[{}], current(before)=[{}], afterAllow=[{}], prev=[{}], limit=[{}]", eventId, current, current + toAllow, prev, initialLimit);
+            //log.info("> [갱신] eventId=[{}], current(before)=[{}], afterAllow=[{}], prev=[{}], limit=[{}]", eventId, current, current + toAllow, prev, initialLimit);
             
             log.info("> [종료] <<<<<<<<<<<< ");
         }

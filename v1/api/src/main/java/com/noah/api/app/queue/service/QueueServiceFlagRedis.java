@@ -37,7 +37,8 @@ public class QueueServiceFlagRedis {
     }
 
     /** 전체 마스터 ON/OFF */
-    public boolean isMasterEnabled() {
+    @SuppressWarnings("unused")
+	public boolean isMasterEnabled() {
     	return masterCache.get(MASTER_KEY, k -> {
             String v = redis.opsForValue().get(MASTER_KEY);
             return v == null || "1".equals(v); // 기본 ON

@@ -58,8 +58,8 @@ dependencies {
     implementation 'net.ttddyy:datasource-proxy:1.9'    
 
     // Lombok
-    compileOnly 'org.projectlombok:lombok:1.18.28'
-    annotationProcessor 'org.projectlombok:lombok:1.18.28'
+    compileOnly 'org.projectlombok:lombok:1.18.34' // 2025년 현재 최신
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
     // 개발 편의
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

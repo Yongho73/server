@@ -1,0 +1,45 @@
+export JAVA_HOME=/e/jdk/jdk-23
+export PATH=$JAVA_HOME/bin:$PATH
+which java
+java -version
+
+
+./gradlew clean bootJar
+./gradlew clean bootJar -Pprofile=dev
+./gradlew clean bootJar -Pprofile=prod
+
+
+nohup java \
+  -Xms2g -Xmx2g \
+  -XX:+UseG1GC \
+  -XX:MaxGCPauseMillis=200 \
+  -XX:+ParallelRefProcEnabled \
+  -XX:MaxMetaspaceSize=256m \
+  -Xss512k \
+  -Xlog:gc*,gc+heap=info:file=logs/gc.log:time,uptime,level,tags \
+  -Dspring.profiles.active=prod \
+  -jar api-0.0.1-SNAPSHOT.jar > logs/app.log 2>&1 &
+
+
+
+ java \
+ -Xms2g -Xmx2g \
+ -XX:+UseG1GC \
+ -XX:MaxGCPauseMillis=200 \
+ -XX:+ParallelRefProcEnabled \
+ -XX:MaxMetaspaceSize=256m \
+ -Xss512k \
+ -Xlog:gc*,gc+heap=info:file=logs/gc.log:time,uptime,level,tags \
+ -Dspring.profiles.active=local \
+ -jar api-0.0.1-SNAPSHOT.jar > logs/app.log 2>&1 &
+
+
+
+PS C:\WINDOWS\system32> Get-CimInstance Win32_Process -Filter "CommandLine LIKE '%api-0.0.1-SNAPSHOT.jar%'" | Select-Object ProcessId, CommandLine
+
+ProcessId CommandLine
+--------- -----------
+     6328 E:\jdk\jdk-23\bin\java.exe -Xms2g -Xmx2g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+ParallelRefProcEnabled...
+
+
+PS C:\WINDOWS\system32> Stop-Process -Id 6328

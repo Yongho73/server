@@ -10,11 +10,12 @@ settings:
   jwt:
     secret: smartixAccessCredential0419jH8lURsecX0r7NSePoGxUUBgu10W8v4PL6Lucda1X7M=
   allowedOrigins:
+    - http://localhost
     - http://localhost:8080
     - http://localhost:5173
     - http://localhost:3000
     - http://localhost:8081
-  
+
 spring:  
   datasource:    
     hSql:
@@ -30,12 +31,12 @@ spring:
       # password: YOUR_PASSWORD  # redis.conf에서 requirepass 썼으면 해제 후 입력
       cluster:
         nodes:
-          - 192.168.0.41:7001
-          - 192.168.0.41:7002
-          - 192.168.0.41:7003
-          - 192.168.0.41:7004
-          - 192.168.0.41:7005
-          - 192.168.0.41:7006
+          - host.docker.internal:7001
+          - host.docker.internal:7002
+          - host.docker.internal:7003
+          - host.docker.internal:7004
+          - host.docker.internal:7005
+          - host.docker.internal:7006
       lettuce:
         pool:
           max-active: 16

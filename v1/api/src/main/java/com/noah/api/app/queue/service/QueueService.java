@@ -314,7 +314,8 @@ public class QueueService {
             int finalStart = start;
 
             redis.executePipelined(new SessionCallback<Object>() {
-                @Override
+                @SuppressWarnings({ "unchecked", "rawtypes" })
+				@Override
                 public Object execute(RedisOperations operations) throws DataAccessException {
                     for (int i = finalStart; i < end; i++) {
                         String qid = UUID.randomUUID().toString();
