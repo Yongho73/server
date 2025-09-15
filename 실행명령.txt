@@ -43,3 +43,8 @@ ProcessId CommandLine
 
 
 Stop-Process -Id 6328
+
+
+
+
+ k6 run queue-load-test.js
