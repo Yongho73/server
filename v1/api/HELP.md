@@ -262,8 +262,51 @@ Port: 예를 들어 7001 (클러스터 노드 중 아무 마스터 하나)
 NAT/방화벽: NAT 넘어가면 --cluster-announce-ip에 외부에서 접근 가능한 IP를 정확히 설정. 방화벽에 상호 허용.
 
 
-# 해야할거
-1. 팝업 결제 일때 하트비트 처리
+# 배포
+
+프론트 배포 (nginx.conf)
+
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        # React 정적 파일 경로
+        root   E:/react.js/client/waiting/dist;
+        index  index.html;
+
+        location / {
+            try_files $uri /index.html;
+        }
+
+        # Spring Boot API 프록시
+        location /api/ {
+            proxy_pass http://localhost:8080/;
+        }
+    }
+}
+
+
+
+서버 배포 (jdk-23)
+
+./gradlew clean bootJar
+
+java  -Xms2g -Xmx2g  -XX:+UseG1GC  -XX:MaxGCPauseMillis=200  -XX:+ParallelRefProcEnabled  -XX:MaxMetaspaceSize=256m  -Xss512k  -Xlog:gc*,gc+heap=info:file=logs/gc.log:time,uptime,level,tags  -Dspring.profiles.active=local  -jar api-0.0.1-SNAPSHOT.jar > logs/app.log 2>&1 &
+
+
 
 
 
